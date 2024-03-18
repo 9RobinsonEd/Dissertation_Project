@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 
+
 def create_database():
     # Connect to the SQLite database
     conn = sqlite3.connect('installed_apps.db')
@@ -23,6 +24,7 @@ def create_database():
     conn.commit()
     conn.close()
 
+
 def insert_into_database(app_name, last_attack_time=None, attack_type=None):
     # Insert application information into the database
     conn = sqlite3.connect('installed_apps.db')
@@ -35,6 +37,7 @@ def insert_into_database(app_name, last_attack_time=None, attack_type=None):
 
     conn.commit()
     conn.close()
+
 
 def get_installed_applications_from_registry():
     # Fetch installed applications from the registry
@@ -55,7 +58,11 @@ def get_installed_applications_from_registry():
     except Exception as e:
         print("Error fetching from registry:", e)
 
+    # Sort the list of applications alphabetically
+    apps.sort()
+
     return apps
+
 
 def display_installed_apps():
     root = tk.Tk()
@@ -82,6 +89,7 @@ def display_installed_apps():
 
     root.mainloop()
 
+
 def get_attack_info_from_database(app_name):
     # Fetch attack information for an application from the database
     conn = sqlite3.connect('installed_apps.db')
@@ -92,16 +100,17 @@ def get_attack_info_from_database(app_name):
     ''', (app_name,))
     result = cursor.fetchone()
 
-    conn.close()
-
     if result:
+        conn.close()
         return result
-    else:
-        # If no information found, prompt user for input and store in the database
-        last_attack_time = input(f"Enter Last Attack Time for '{app_name}': ")
-        attack_type = input(f"Enter Attack Type for '{app_name}': ")
-        insert_into_database(app_name, last_attack_time, attack_type)
-        return last_attack_time, attack_type
+
+    # If no information found, prompt user for input and store in the database
+    last_attack_time = input(f"Enter Last Attack Time for '{app_name}': ")
+    attack_type = input(f"Enter Attack Type for '{app_name}': ")
+    insert_into_database(app_name, last_attack_time, attack_type)
+    conn.close()
+    return last_attack_time, attack_type
+
 
 # Create the database if it doesn't exist
 create_database()
