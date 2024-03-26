@@ -16,7 +16,8 @@ def create_database():
             id INTEGER PRIMARY KEY,
             app_name TEXT UNIQUE,
             last_attack_time TEXT,
-            attack_type TEXT
+            attack_type TEXT,
+            vulnerabilities TEXT
         )
     ''')
 
@@ -25,15 +26,15 @@ def create_database():
     conn.close()
 
 
-def insert_into_database(app_name, last_attack_time=None, attack_type=None):
+def insert_into_database(app_name, last_attack_time=None, attack_type=None, vulnerabilities=None):
     # Insert application information into the database
     conn = sqlite3.connect('installed_apps.db')
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT OR IGNORE INTO applications (app_name, last_attack_time, attack_type)
-        VALUES (?, ?, ?)
-    ''', (app_name, last_attack_time, attack_type))
+        INSERT OR IGNORE INTO applications (app_name, last_attack_time, attack_type, vulnerabilities)
+        VALUES (?, ?, ?, ?)
+    ''', (app_name, last_attack_time, attack_type, vulnerabilities))
 
     conn.commit()
     conn.close()
@@ -69,21 +70,23 @@ def display_installed_apps():
     root.title("Installed Applications")
 
     tree = ttk.Treeview(root)
-    tree['columns'] = ('ID', 'Application Name', 'Last Attack Time', 'Attack Type')
+    tree['columns'] = ('ID', 'Application Name', 'Last Attack Time', 'Attack Type', 'Vulnerabilities')
     tree.heading('ID', text='ID')
     tree.column('ID', width=50, anchor='center')
     tree.heading('Application Name', text='Application Name')
-    tree.column('Application Name', width=250, anchor='w')
+    tree.column('Application Name', width=200, anchor='w')
     tree.heading('Last Attack Time', text='Last Attack Time')
     tree.column('Last Attack Time', width=150, anchor='center')
     tree.heading('Attack Type', text='Attack Type')
     tree.column('Attack Type', width=150, anchor='w')
+    tree.heading('Vulnerabilities', text='Vulnerabilities')
+    tree.column('Vulnerabilities', width=150, anchor='w')
 
     installed_applications = get_installed_applications_from_registry()
 
     for idx, app_name in enumerate(installed_applications, start=1):
-        last_attack_time, attack_type = get_attack_info_from_database(app_name)
-        tree.insert('', 'end', values=(idx, app_name, last_attack_time, attack_type))
+        last_attack_time, attack_type, vulnerabilities = get_attack_info_from_database(app_name)
+        tree.insert('', 'end', values=(idx, app_name, last_attack_time, attack_type, vulnerabilities))
 
     tree.pack(expand=True, fill='both')
 
@@ -96,7 +99,7 @@ def get_attack_info_from_database(app_name):
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT last_attack_time, attack_type FROM applications WHERE app_name = ?
+        SELECT last_attack_time, attack_type, vulnerabilities FROM applications WHERE app_name = ?
     ''', (app_name,))
     result = cursor.fetchone()
 
@@ -107,9 +110,10 @@ def get_attack_info_from_database(app_name):
     # If no information found, prompt user for input and store in the database
     last_attack_time = input(f"Enter Last Attack Time for '{app_name}': ")
     attack_type = input(f"Enter Attack Type for '{app_name}': ")
-    insert_into_database(app_name, last_attack_time, attack_type)
+    vulnerabilities = input(f"Enter Vulnerabilities for '{app_name}': ")
+    insert_into_database(app_name, last_attack_time, attack_type, vulnerabilities)
     conn.close()
-    return last_attack_time, attack_type
+    return last_attack_time, attack_type, vulnerabilities
 
 
 # Create the database if it doesn't exist
