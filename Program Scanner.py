@@ -3,6 +3,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk
 import subprocess
+import matplotlib.pyplot as plt
 
 
 def create_database():
@@ -90,6 +91,10 @@ def display_installed_apps():
 
     tree.pack(expand=True, fill='both')
 
+    # Add a button to display pie chart
+    pie_chart_button = ttk.Button(root, text="Show Pie Chart", command=display_pie_chart)
+    pie_chart_button.pack(pady=10)
+
     root.mainloop()
 
 
@@ -114,6 +119,42 @@ def get_attack_info_from_database(app_name):
     insert_into_database(app_name, last_attack_time, attack_type, vulnerabilities)
     conn.close()
     return last_attack_time, attack_type, vulnerabilities
+
+
+def display_pie_chart():
+    vulnerabilities_data = get_vulnerabilities_data()
+
+    if not vulnerabilities_data:
+        tk.messagebox.showinfo("No Data", "No data available to display a pie chart.")
+        return
+
+    labels = list(vulnerabilities_data.keys())
+    sizes = list(vulnerabilities_data.values())
+
+    plt.figure(figsize=(8, 6))
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
+    plt.title("Vulnerabilities Distribution")
+    plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    plt.show()
+
+
+def get_vulnerabilities_data():
+    # Fetch vulnerabilities data from the database and calculate distribution
+    conn = sqlite3.connect('installed_apps.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT vulnerabilities FROM applications')
+    vulnerabilities_list = cursor.fetchall()
+
+    conn.close()
+
+    vulnerabilities_count = {}
+    for vulnerabilities in vulnerabilities_list:
+        vulnerabilities = vulnerabilities[0].split(', ')  # Assuming vulnerabilities are separated by comma
+        for vulnerability in vulnerabilities:
+            vulnerabilities_count[vulnerability] = vulnerabilities_count.get(vulnerability, 0) + 1
+
+    return vulnerabilities_count
 
 
 # Create the database if it doesn't exist
